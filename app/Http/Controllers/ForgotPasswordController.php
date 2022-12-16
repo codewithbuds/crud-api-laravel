@@ -14,7 +14,7 @@ use Illuminate\Support\Str;
 class ForgotPasswordController extends Controller
 {
     //Forgot the password
-    public function submitForgetPasswordForm(UserRequest $request)
+    public function ForgetPassword(UserRequest $request)
     {
         $request->validated();
 
@@ -39,7 +39,7 @@ class ForgotPasswordController extends Controller
         );
     }
     //For Reset password
-    public function submitResetPasswordForm(UserRequest $request)
+    public function ResetPassword(UserRequest $request)
     {
         $request->validated();
 

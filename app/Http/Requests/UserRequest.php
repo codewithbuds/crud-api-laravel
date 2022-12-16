@@ -26,14 +26,14 @@ class UserRequest extends FormRequest
     {
         
         return match($this->method()){
-            'POST' => $this->postRegistration(),
-            'POST' =>$this->postLogin(),
-            'POST' =>$this->submitForgetPasswordForm(),
-            'POST' =>$this->submitResetPasswordForm(),
+            'POST' => $this->Registration(),
+            'POST' =>$this->Login(),
+            'POST' =>$this->ForgetPassword(),
+            'POST' =>$this->ResetPassword(),
         };
     }
         //validation for postRegistration
-       public function postRegistration(): array 
+       public function Registration(): array 
         {
             return [
                 'fname' =>' required|max:255',
@@ -45,21 +45,21 @@ class UserRequest extends FormRequest
         
         
         //validation for postlogin
-        public function postLogin(): array {
+        public function Login(): array {
         return [
             'email' => 'required',
             'password' => 'required',
         ];
     }
     // validation for Forgot Password
-     public function  submitForgetPasswordForm(): array 
+     public function  ForgetPassword(): array 
     {
         return [
             'email' => 'required|email|exists:users',
         ];
     }
      // validation for Reset Password
-    public function submitResetPasswordForm(): array{
+    public function ResetPassword(): array{
         return[
             'email' => 'required|email|exists:users',
             'password' => 'required|string|min:8|confirmed',

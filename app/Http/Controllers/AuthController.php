@@ -16,84 +16,64 @@ use Illuminate\Support\Str;
 class AuthController extends Controller
 
 {
-    //Redirects to the login
-    public function index(){
-        return view('auth.login');
-    }
-    //
-    public function registration(){
-        return view('auth.registration');
-    }
-
-    // for user login
-    public function postLogin(UserRequest $request)
+    //Match credentials and login
+    public function Login(UserRequest $request)
     {
         $request->validated();
 
         $credentials = $request->only('email', 'password');
         if (Auth::attempt($credentials)) {
-            return redirect()->intended('dashboard')
-            ->withSuccess('You have Successfully loggedin');
+            return response()->json(['message' => 'You have logged in succssfull']);
         }
 
-        return redirect("login")->withSuccess('Oppes! You have entered invalid credentials');
+        return response()->json(['message'=> 'You have entered invalid credentials']);
     }
 
-    //for user registeration at signup
-    public function postRegistration(UserRequest $request)
+    // saves user data for signup
+    public function Registration(UserRequest $request)
     {
         $request->validated();
 
-        $data = $request->all();
-        $createUser = $this->create($data);
+        $user = $request->all();
+        
+        $createUser = $this->create($user);
+
         $token = Str::random(255);
 
         UserVerify::create([
             'user_id' => $createUser->id,
             'token' => $token,
         ]);
+    }
+        // create table of user
+    public function create(array $user)
+    {
+        return User::create([
+            'fname' => $user['fname'],
+            'lname' => $user['lname'],
+            'email' => $user['email'],
+            'profileimage' => $user['profileimage'],
+            'password' => Hash::make($user['password']),
+        ]);
+
+        //Image_Upload
+        if ($request->profileimage) {
+            $imageName = time() . '.' . $request->profileimage->extension();
+            $request->profileimage->move(public_path('images'), $imageName);
+        }
 
         // Here I can send mail through Queues or like this 
         Mail::send(
-            'email.emailVerificationEmail',
-            ['token' => $token],
-            function ($message) use ($request) {
+            'email.emailVerificationEmail',['token' => $token],
+            function ($message) use ($request) 
+            {
                 $message->to($request->email);
                 $message->subject('Email Verification Mail');
-            }
-        );
-
-        return redirect("dashboard")->withSuccess('Great! You have Successfully loggedin');
-
-    }
-    //Shows the Dashboard
-    public function dashboard()
-    {
-        if(Auth::check()){
-            return view('dashboard');
-        }
-  
-        return redirect("login")->withSuccess('Opps! You do not have access');
+            });
+            
+        return response()-> json(['message' => 'Registered Successfully', 'user' =>$user, 'token' => $user->$token]);
     }
 
-        // Saves the user data
-    public function create(array $data)
-    {
-        return User::create([
-            'fname' => $data['fname'],
-            'lname' => $data['lname'],
-            'email' => $data['email'],
-            'profileimage' => $data['profileimage'],
-            'password' => Hash::make($data['password']),
-        ]);
-        
-    }
-    public function logout() {
-        Session::flush();
-        Auth::logout();
-  
-        return Redirect('login');
-    }
     //Verifies the account 
     public function verifyAccount($token)
     {
@@ -111,32 +91,37 @@ class AuthController extends Controller
             } else {
                 $message =
                     'Your e-mail is already verified. You can now login.';
+                }
             }
+    }
+      //Logout User
+      public function logout(Request $request)
+      {
+          $token = $request->header('Authorization');
+          $user = UserVerifiy::where('token', $token)->first();
+          if ($user) {
+              $user->delete();
+              return response()->json(['message' => 'User Logged Out',]);
+  
+          } 
+          else {
+              return response()->json(['message' => 'User not found',]);
+          }
+      }
+
+      //LoggedIn User's View Profile
+    public function profile(Request $request)
+    {
+        $token = $request->header('Authorization');
+        $user = UserVerifiy::where('token', $token)->first();
+        $user = $user->user;
+        if($user)
+        {
+            return response()->json(['message' =>"My Profile", 'user' => $user]);
         }
-        return redirect()
-            ->route('login')
-            ->with('message', $message);
+        else{
+            return response()->json(['message' =>"User Not Found"]);
+        }   
     }
 }
-// Registers the user
-// public function save_user(UserRequest $request)
-// {
-//     $user = User::where('email', $request['email'])->first();
-//     if ($user){
-//         return response()->json(['exists' => 'Email already exist']);
-//     }
-//     else{
-//         $user = new user;
-//         $user->fname = $request['fname'];
-//         $user->lname = $request['lname'];
-//         $user->email = $request['email'];
-//         $user->password = bcrypt($request['password']);
-//         $user->profileimage = $request['profileimage'];
-//     }
-//         $request->validated();
-//         $user->save();
-//         return response()->json(['success'=>'User registered successfully']);
-
-// }
-
 
